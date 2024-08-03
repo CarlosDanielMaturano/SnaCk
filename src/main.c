@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <termios.h>
+#include <fcntl.h>
 #define MAP_WIDTH 30
 #define MAP_HEIGHT 15
 #define INITIAL_SNAKE_BODY_SIZE 5
@@ -23,7 +25,9 @@ void clear_screen();
 void draw_map(int [MAP_HEIGHT][MAP_WIDTH]);
 void clear_map();
 void move_snake(Snake *);
+void handle_input(Snake *);
 Snake create_snake();
+int _kbhit();
 
 int map[MAP_HEIGHT][MAP_WIDTH];
 Vector2 *snake_body;
@@ -44,13 +48,14 @@ int main(void) {
         if (elapsed_time_ms >= 300) 
             start = current;
 
+        handle_input(&snake);
         move_snake(&snake);
 
         for (size_t i = 0; i < snake.body_size; i++) {
             Vector2 *pos = &snake_body[i];
             map[pos->y][pos->x] = 1;
         }
-
+        
         clear_screen();
         draw_map(map);
         clear_map();
@@ -108,4 +113,60 @@ void move_snake(Snake *snake) {
     for (size_t i = 0; i < body_size; i++)
         snake->body[i-1] = snake->body[i];
     snake->body[body_size - 1] = new_head;
+}
+
+void handle_input(Snake *snake) {
+    Vector2 *dir = &(snake->head_dir);
+    if (_kbhit()) {
+        char c = getchar();
+        switch (c) {
+        case 'w':
+            if (dir->y == 0) {
+                dir->x = 0; 
+                dir->y = -1;
+            }
+            break;
+        case 'a':
+            if (dir->x == 0) {
+                dir->y = 0; 
+                dir->x = -1;
+            }
+            break;
+        case 's':
+            if (dir->y == 0) {
+                dir->x = 0; 
+                dir->y = 1;
+            }
+            break;
+        case 'd':
+            if (dir->x == 0) {
+                dir->y = 0; 
+                dir->x = 1;
+            }
+            break;
+        default:
+            return;
+        }
+    }
+}
+
+int _kbhit() {
+    struct termios oldt, newt;
+    int ch;
+    int oldf;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+    ch = getchar();
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    fcntl(STDIN_FILENO, F_SETFL, oldf);
+    if(ch != EOF) {
+      ungetc(ch, stdin);
+      return 1;
+    }
+ 
+    return 0;
 }
