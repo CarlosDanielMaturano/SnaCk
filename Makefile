@@ -2,7 +2,7 @@ CC=$(clang)
 
 build:
 	- mkdir out
-	clang -o out/main src/main.c
+	clang -o out/main src/main.c 
 
 run:
 	./out/main

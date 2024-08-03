@@ -1,35 +1,56 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #define MAP_WIDTH 30
 #define MAP_HEIGHT 15
-#define INITIAL_SNAKE_BODY_SIZE 3
-#define SLEEP_TIME 160000 // 16 miliseconds in microseconds
+#define INITIAL_SNAKE_BODY_SIZE 5
+#define SLEEP_TIME 140000 // 16 miliseconds in microseconds
 
 typedef struct {
-    char x;
-    char y;
+    unsigned int x;
+    unsigned int y;
 } Vector2;
 
 typedef struct {
     Vector2 head_dir;
-    Vector2 head_pos;
+    Vector2 *head_pos;
     int body_size;
-    char *body;
+    Vector2 *body;
 } Snake;
 
 void clear_screen();
 void draw_map(int [MAP_HEIGHT][MAP_WIDTH]);
 void clear_map();
+void move_snake(Snake *);
 Snake create_snake();
 
 int map[MAP_HEIGHT][MAP_WIDTH];
-char *snake_body;
+Vector2 *snake_body;
 
 int main(void) {
     Snake snake = create_snake();
+    Vector2 **body_ptr = (Vector2 **)malloc(sizeof(Vector2 *));
+
+    struct timeval start, current;
+    double elapsed_time_ms = 0;
+    gettimeofday(&start, NULL);
+
     for (;;) {
-        map[snake.head_pos.y][snake.head_pos.x] = 1;
+        gettimeofday(&current, NULL);
+        elapsed_time_ms =  (current.tv_sec - start.tv_sec) * 1000 
+            + (current.tv_usec - start.tv_usec) / 1000;
+    
+        if (elapsed_time_ms >= 300) 
+            start = current;
+
+        move_snake(&snake);
+
+        for (size_t i = 0; i < snake.body_size; i++) {
+            Vector2 *pos = &snake_body[i];
+            map[pos->y][pos->x] = 1;
+        }
+
         clear_screen();
         draw_map(map);
         clear_map();
@@ -57,13 +78,34 @@ void clear_map() {
 };
 
 Snake create_snake() {
-    snake_body = malloc(1 * sizeof(char));
+    snake_body = malloc(INITIAL_SNAKE_BODY_SIZE * sizeof(Vector2));
+    for (size_t i = 0; i < INITIAL_SNAKE_BODY_SIZE; i++) {
+        snake_body[i] = (Vector2) { i+1, 5 };
+    }
     Vector2 snake_head_dir = (Vector2) { 1, 0 };
-    Vector2 snake_head_pos = (Vector2) { 10, 5 };
+    Vector2 *snake_head_pos = &snake_body[INITIAL_SNAKE_BODY_SIZE - 1];
     return (Snake) {
         .head_dir = snake_head_dir,
         .head_pos = snake_head_pos,
-        .body_size = 1,
+        .body_size = INITIAL_SNAKE_BODY_SIZE,
         .body = snake_body,
     };
+}
+
+void move_snake(Snake *snake) {
+    Vector2 new_head = (Vector2) {
+        .x = snake->head_pos->x + snake->head_dir.x,
+        .y = snake->head_pos->y + snake->head_dir.y,
+    };
+
+    // warp the new_head pos
+    if (new_head.x >= MAP_WIDTH) new_head.x = 0;
+    if (new_head.y >= MAP_HEIGHT) new_head.y = 0;
+    if (new_head.x < 0) new_head.x = MAP_WIDTH;
+    if (new_head.y < 0) new_head.x = MAP_HEIGHT;
+
+    size_t body_size = snake->body_size;
+    for (size_t i = 0; i < body_size; i++)
+        snake->body[i-1] = snake->body[i];
+    snake->body[body_size - 1] = new_head;
 }
