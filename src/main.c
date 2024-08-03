@@ -10,8 +10,8 @@
 #define SLEEP_TIME 140000 // 16 miliseconds in microseconds
 
 typedef struct {
-    unsigned int x;
-    unsigned int y;
+    int x;
+    int y;
 } Vector2;
 
 typedef struct {
@@ -71,7 +71,7 @@ void clear_screen() {
 void draw_map(int map[MAP_HEIGHT][MAP_WIDTH]) {
     for (size_t j = 0; j < MAP_HEIGHT; j++)  {
         for (size_t i = 0; i < MAP_WIDTH; i++) 
-            putchar(!map[j][i] ? '+' : '#');
+            putchar(!map[j][i] ? '+' : '@');
         putchar('\n');
     }
 }
@@ -103,11 +103,11 @@ void move_snake(Snake *snake) {
         .y = snake->head_pos->y + snake->head_dir.y,
     };
 
-    // warp the new_head pos
-    if (new_head.x >= MAP_WIDTH) new_head.x = 0;
+    // wrap jhe new_head pos
     if (new_head.y >= MAP_HEIGHT) new_head.y = 0;
-    if (new_head.x < 0) new_head.x = MAP_WIDTH;
-    if (new_head.y < 0) new_head.x = MAP_HEIGHT;
+    if (new_head.x >= MAP_WIDTH) new_head.x = 0;
+    if (new_head.x < 0) new_head.x = MAP_WIDTH - 1;
+    if (new_head.y < 0) new_head.y = MAP_HEIGHT - 1;
 
     size_t body_size = snake->body_size;
     for (size_t i = 0; i < body_size; i++)
