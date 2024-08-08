@@ -4,6 +4,9 @@
 #include <sys/time.h>
 #include <termios.h>
 #include <fcntl.h>
+#define EMPTY 0
+#define SNAKE_BODY 1
+#define SNAKE_HEAD 2
 #define MAP_WIDTH 30
 #define MAP_HEIGHT 15
 #define INITIAL_SNAKE_BODY_SIZE 5
@@ -26,6 +29,7 @@ void draw_map(int [MAP_HEIGHT][MAP_WIDTH]);
 void clear_map();
 void move_snake(Snake *);
 void handle_input(Snake *);
+void draw_snake(Snake *);
 Snake create_snake();
 int _kbhit();
 
@@ -48,15 +52,10 @@ int main(void) {
         if (elapsed_time_ms >= 300) 
             start = current;
 
+        clear_screen();
         handle_input(&snake);
         move_snake(&snake);
-
-        for (size_t i = 0; i < snake.body_size; i++) {
-            Vector2 *pos = &snake_body[i];
-            map[pos->y][pos->x] = 1;
-        }
-        
-        clear_screen();
+        draw_snake(&snake);
         draw_map(map);
         clear_map();
         usleep(SLEEP_TIME);
@@ -71,7 +70,17 @@ void clear_screen() {
 void draw_map(int map[MAP_HEIGHT][MAP_WIDTH]) {
     for (size_t j = 0; j < MAP_HEIGHT; j++)  {
         for (size_t i = 0; i < MAP_WIDTH; i++) 
-            putchar(!map[j][i] ? '+' : '@');
+            switch(map[j][i]) {
+            case 0:
+                putchar('+');
+                break;
+            case 1:
+                putchar('$');
+                break;
+            case 2:
+                putchar('@');
+                break;
+            }
         putchar('\n');
     }
 }
@@ -103,7 +112,7 @@ void move_snake(Snake *snake) {
         .y = snake->head_pos->y + snake->head_dir.y,
     };
 
-    // wrap jhe new_head pos
+    // wrap the new_head pos
     if (new_head.y >= MAP_HEIGHT) new_head.y = 0;
     if (new_head.x >= MAP_WIDTH) new_head.x = 0;
     if (new_head.x < 0) new_head.x = MAP_WIDTH - 1;
@@ -118,7 +127,7 @@ void move_snake(Snake *snake) {
 void handle_input(Snake *snake) {
     Vector2 *dir = &(snake->head_dir);
     if (_kbhit()) {
-        char c = getchar();
+        char c = getchar() | (1 << 5);
         switch (c) {
         case 'w':
             if (dir->y == 0) {
@@ -167,6 +176,13 @@ int _kbhit() {
       ungetc(ch, stdin);
       return 1;
     }
- 
+
     return 0;
+}
+
+void draw_snake(Snake *snake) {
+    for (size_t i = 0; i < snake->body_size; i++) {
+        Vector2 *pos = &snake_body[i];
+        map[pos->y][pos->x] = pos == snake->head_pos ? 2 : 1;
+    }
 }
