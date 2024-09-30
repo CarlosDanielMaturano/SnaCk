@@ -4,6 +4,7 @@
 #include <sys/time.h>
 #include <termios.h>
 #include <fcntl.h>
+
 #define EMPTY 0
 #define SNAKE_BODY 1
 #define SNAKE_HEAD 2
@@ -30,6 +31,7 @@ void clear_map();
 void move_snake(Snake *);
 void handle_input(Snake *);
 void draw_snake(Snake *);
+void grow_snake(Snake *);
 Snake create_snake();
 int _kbhit();
 
@@ -38,8 +40,6 @@ Vector2 *snake_body;
 
 int main(void) {
     Snake snake = create_snake();
-    Vector2 **body_ptr = (Vector2 **)malloc(sizeof(Vector2 *));
-
     struct timeval start, current;
     double elapsed_time_ms = 0;
     gettimeofday(&start, NULL);
@@ -129,6 +129,9 @@ void handle_input(Snake *snake) {
     if (_kbhit()) {
         char c = getchar() | (1 << 5);
         switch (c) {
+        case 'e':
+            grow_snake(snake);
+            break;
         case 'w':
             if (dir->y == 0) {
                 dir->x = 0; 
@@ -183,6 +186,30 @@ int _kbhit() {
 void draw_snake(Snake *snake) {
     for (size_t i = 0; i < snake->body_size; i++) {
         Vector2 *pos = &snake_body[i];
-        map[pos->y][pos->x] = pos == snake->head_pos ? 2 : 1;
+        map[pos->y][pos->x] = (pos == snake->head_pos ? 2 : 1);
     }
+}
+
+void grow_snake(Snake *snake) {
+    size_t old_body_size = snake->body_size;
+    size_t new_body_size = old_body_size + 1;
+    
+    // allocate more memory 
+    Vector2 *new_body = malloc(new_body_size * sizeof(Vector2));
+
+    // "clone" the first piece of the snake that 
+    // is consumed while the snake is moving
+    Vector2 snake_tail = snake_body[0];
+
+    // clone the body leaving a free space and the beginning 
+    // of the array
+    for (size_t i = 0; i < old_body_size; i++) 
+        new_body[i+1] = snake_body[i];
+
+    new_body[0] = snake_tail;
+
+    snake_body = new_body;
+    snake->body = snake_body;
+    snake->body_size++;
+    snake->head_pos = &new_body[new_body_size-1];
 }
