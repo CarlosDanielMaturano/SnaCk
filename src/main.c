@@ -8,6 +8,7 @@
 #define EMPTY 0
 #define SNAKE_BODY 1
 #define SNAKE_HEAD 2
+#define FOOD 3 
 #define MAP_WIDTH 30
 #define MAP_HEIGHT 15
 #define INITIAL_SNAKE_BODY_SIZE 5
@@ -32,11 +33,13 @@ void move_snake(Snake *);
 void handle_input(Snake *);
 void draw_snake(Snake *);
 void grow_snake(Snake *);
+void spawn_food(Snake *);
 Snake create_snake();
 int _kbhit();
 
 int map[MAP_HEIGHT][MAP_WIDTH];
 Vector2 *snake_body;
+Vector2 food_pos;
 
 int main(void) {
     Snake snake = create_snake();
@@ -68,6 +71,8 @@ void clear_screen() {
 }
 
 void draw_map(int map[MAP_HEIGHT][MAP_WIDTH]) {
+    map[food_pos.y][food_pos.x] = FOOD;
+
     for (size_t j = 0; j < MAP_HEIGHT; j++)  {
         for (size_t i = 0; i < MAP_WIDTH; i++) 
             switch(map[j][i]) {
@@ -79,6 +84,9 @@ void draw_map(int map[MAP_HEIGHT][MAP_WIDTH]) {
                 break;
             case 2:
                 putchar('@');
+                break;
+            case 3:
+                putchar('S');
                 break;
             }
         putchar('\n');
@@ -156,6 +164,9 @@ void handle_input(Snake *snake) {
                 dir->x = 1;
             }
             break;
+        case 'r':
+            spawn_food(snake);
+            break;
         default:
             return;
         }
@@ -212,4 +223,18 @@ void grow_snake(Snake *snake) {
     snake->body = snake_body;
     snake->body_size++;
     snake->head_pos = &new_body[new_body_size-1];
+}
+
+void spawn_food(Snake *snake) {
+    food_pos = (Vector2) { 
+        .x = rand() % MAP_WIDTH,
+        .y = rand() % MAP_HEIGHT,
+    };
+
+    // for avoiding the food spawning inside the snake body
+    for (size_t i = 0; i < snake->body_size; i++) {
+        if (food_pos.x == snake_body[i].x  && food_pos.y == snake_body[i].y) {
+            return spawn_food(snake);
+        }
+    }
 }
