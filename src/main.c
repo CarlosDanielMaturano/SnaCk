@@ -34,6 +34,7 @@ void handle_input(Snake *);
 void draw_snake(Snake *);
 void grow_snake(Snake *);
 void spawn_food(Snake *);
+void check_food_collision(Snake *);
 Snake create_snake();
 int _kbhit();
 
@@ -58,6 +59,7 @@ int main(void) {
         clear_screen();
         handle_input(&snake);
         move_snake(&snake);
+        check_food_collision(&snake);
         draw_snake(&snake);
         draw_map(map);
         clear_map();
@@ -236,5 +238,13 @@ void spawn_food(Snake *snake) {
         if (food_pos.x == snake_body[i].x  && food_pos.y == snake_body[i].y) {
             return spawn_food(snake);
         }
+    }
+}
+
+void check_food_collision(Snake *snake) {
+    Vector2 head_pos = *snake->head_pos;
+    if (head_pos.x == food_pos.x && head_pos.y == food_pos.y) {
+        grow_snake(snake);
+        spawn_food(snake);
     }
 }
