@@ -34,9 +34,10 @@ void handle_input(Snake *);
 void draw_snake(Snake *);
 void grow_snake(Snake *);
 void spawn_food(Snake *);
-void check_food_collision(Snake *);
+void apply_food_collision(Snake *);
 Snake create_snake();
 int _kbhit();
+int check_snake_collision(Snake *);
 
 int map[MAP_HEIGHT][MAP_WIDTH];
 Vector2 *snake_body;
@@ -59,7 +60,11 @@ int main(void) {
         clear_screen();
         handle_input(&snake);
         move_snake(&snake);
-        check_food_collision(&snake);
+
+        if (check_snake_collision(&snake))
+            return 1;
+
+        apply_food_collision(&snake);
         draw_snake(&snake);
         draw_map(map);
         clear_map();
@@ -241,10 +246,20 @@ void spawn_food(Snake *snake) {
     }
 }
 
-void check_food_collision(Snake *snake) {
+void apply_food_collision(Snake *snake) {
     Vector2 head_pos = *snake->head_pos;
     if (head_pos.x == food_pos.x && head_pos.y == food_pos.y) {
         grow_snake(snake);
         spawn_food(snake);
     }
+}
+
+int check_snake_collision(Snake *snake) {
+    size_t body_size = snake->body_size - 1;
+    Vector2 head = snake_body[body_size];
+    for (size_t i = 0; i < body_size; i++) {
+        if (snake_body[i].x  == head.x && snake_body[i].y == head.y) 
+            return 1;
+    }
+    return 0;
 }
