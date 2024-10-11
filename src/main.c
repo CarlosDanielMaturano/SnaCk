@@ -45,8 +45,10 @@ Vector2 food_pos;
 
 int main(void) {
     Snake snake = create_snake();
+    spawn_food(&snake);
     struct timeval start, current;
     double elapsed_time_ms = 0;
+    int has_started = 0;  
     gettimeofday(&start, NULL);
 
     for (;;) {
@@ -60,15 +62,23 @@ int main(void) {
         clear_screen();
         handle_input(&snake);
         move_snake(&snake);
-
-        if (check_snake_collision(&snake))
-            return 1;
+ 
+        if (check_snake_collision(&snake)) {
+            snake = create_snake();
+            spawn_food(&snake);
+            has_started = 0;
+            continue;
+        }
 
         apply_food_collision(&snake);
         draw_snake(&snake);
         draw_map(map);
         clear_map();
         usleep(SLEEP_TIME);
+
+        // little hack to start only when the player sends a input
+        while (!has_started)
+            has_started = _kbhit();
     }
     return 0;
 }
@@ -231,6 +241,7 @@ void grow_snake(Snake *snake) {
     snake->body_size++;
     snake->head_pos = &new_body[new_body_size-1];
 }
+
 
 void spawn_food(Snake *snake) {
     food_pos = (Vector2) { 
